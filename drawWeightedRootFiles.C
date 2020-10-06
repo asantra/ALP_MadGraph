@@ -101,6 +101,7 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
     
     
     TH1F *h_rALP                        = new TH1F("h_rALP", "h_rALP",100,0,10);
+    TH1F *h_RatioLA                     = new TH1F("h_RatioLA", "h_RatioLA",1000,0,5);
     
     
     ///2D histograms
@@ -155,7 +156,9 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
       
       /// need one specific photon beam
       if(std::abs(incomingPhotonBeam-2.2)>0.01)continue;
-      std::cout << "Incoming photon beam " << incomingPhotonBeam << std::endl;
+      std::cout << "----------------------" << std::endl;
+      std::cout << "This is event number: " << jentry << std::endl;
+      std::cout << "Incoming photon beam  " << incomingPhotonBeam << std::endl;
       
       int incomingPhotonOrder(-999);
       vector<int> outgoingPhotonOrder;
@@ -228,7 +231,7 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
        float LD         = 5.5;
        double expFactor = exp(-(LS/LA)) - exp(-((LD+LS)/LA));
        
-       TF1 *f1 = new TF1("f1","1/[0]*exp(-x/[0])",0.0,1.0);
+       TF1 *f1 = new TF1("f1","1/[0]*exp(-x/[0])",0.0,100.0);
        f1->SetParameter(0,LA);
        f1->SetParName(0,"decay length");
        double r = 0.0; // this is the r where ALP is decaying
@@ -240,8 +243,10 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
        double totalR = 0.0;
        int zAxisFail  = 0;
        int radiusFail = 0;
-       for(int m=0;m<100;++m){
-           double prob = f1->GetRandom();
+       int bothFail = 0;
+       int m = 0;
+       for(m=0;m<10000;++m){
+           double prob = f1->GetRandom(0.0,1.0);
            r = -LA*log(prob*LA);
            h_rALP->Fill(r);
            totalR += r;
@@ -265,6 +270,7 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
            
            if(!zAxisPass)zAxisFail++;
            if(!(photon1RadiusPass && photon2RadiusPass))radiusFail++;
+           if(!(zAxisPass && photon1RadiusPass && photon2RadiusPass))bothFail++;
            
            if(zAxisPass && photon1RadiusPass && photon2RadiusPass && photon1EnergyPass && photon2EnergyPass)photonAllPass++;
            if(zAxisPass && photon1RadiusPass && photon2RadiusPass && (photon1EnergyPass || photon2EnergyPass))photonEnergyPass++;
@@ -272,19 +278,28 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
            photonAll++;
            
        }
-       std::cout << "From the 100 trial, failed trial for zAxis cut: " << zAxisFail << std::endl;
-       std::cout << "From the 100 trial, failed trial for radius cut: " << radiusFail << std::endl;
-       std::cout << "The average r value " << totalR/photonAll << std::endl;
        
        double weightAllPass    = photonAllPass/photonAll;
        double weightEnergyPass = photonEnergyPass/photonAll;
+       double aveR             = totalR/photonAll;
        
        totalWeightAllPass    += weightAllPass;
        totalWeightEnergyPass += weightEnergyPass;
        totalALP++;
        
+       
        if((Particle_E[outgoingPhotonOrder.at(0)] < 0.5 || Particle_E[outgoingPhotonOrder.at(1)] < 0.5))failEnergyCut++;
        
+       
+       std::cout << "From the " << (m-1) << " trial, failed trial for zAxis cut : " << zAxisFail << std::endl;
+       std::cout << "From the " << (m-1) << " trial, failed trial for radius cut: " << radiusFail << std::endl;
+       std::cout << "From the " << (m-1) << " trial, failed trial for both cut  : " << bothFail << std::endl;
+       std::cout << "From the " << (m-1) << " trial, all pass for both cut      : " << photonAllPass << std::endl;
+       std::cout << "From the " << (m-1) << " trial, no energy pass             : " << photonEnergyPass << std::endl;
+       std::cout << "From the " << (m-1) << " trial, weightAllPass              : " << weightAllPass << std::endl;
+       std::cout << "From the " << (m-1) << " trial, weightEnergyPass           : " << weightEnergyPass << std::endl;
+       std::cout << "The average r value " << aveR << std::endl;
+       h_RatioLA->Fill(LA/aveR);
        
     }/// loop over all events end
     
