@@ -249,7 +249,7 @@ void drawWeightedRootFiles::Loop(TString mass, TString version, TString cutPhoto
            /// get x,y,z of the ALP
            float xALP   = r*sin(alpTheta)*cos(alp.Phi());
            float yALP   = r*sin(alpTheta)*sin(alp.Phi());
-           float zALP   = r*cos(alp.Phi());
+           float zALP   = r*cos(alpTheta);
            
            bool zAxisPass   = (zALP >= LS && zALP <= (LS+LD));
            double x1m[2], y1m[2];
